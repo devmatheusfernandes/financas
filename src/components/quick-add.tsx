@@ -1,23 +1,43 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useOffline } from "next/offline";
+import { enfileirar } from "@/lib/offline-queue";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { budgetImpact, createEntry, type BudgetImpact } from "@/server/actions";
-import { fmtR, parseCents, toInput, today } from "@/lib/format";
-import { Field, IconCamera, IconForm, IconMic, IconSpark, IconText, MoneyInput, Sheet, btnPrimary, inputCls } from "./ui";
+import { addTransaction, budgetImpact, type BudgetImpact } from "@/server/actions";
+import { MESES, MESES_LONGOS, fmtR, monthStr, parseCents, parseMonth, toInput, today } from "@/lib/format";
+import { Field, IconCamera, IconForm, IconMic, IconSpark, IconText, MoneyInput, Segmented, Sheet, Skel, btnPrimary, inputCls } from "./ui";
 
-export type LineOpt = { id: string; label: string };
+export type TableOpt = { id: string; name: string; kind: "in" | "out" | "sub" };
 type Mode = "photo" | "audio" | "text" | "manual";
 type Result = {
   amount: string;
   description: string;
-  lineId: string;
+  tableId: string;
   date: string;
+  frequency: Frequency;
+  endMonth: string | null;
+  installments: string;
   confidence: "high" | "low" | "manual";
   engine?: "ai" | "rules";
   transcript?: string;
   source: "manual" | "ai_text" | "ai_photo" | "ai_audio";
 };
+
+type Frequency = "once" | "monthly" | "yearly" | "installments";
+const FREQ_LABEL: Record<Frequency, string> = { once: "Pontual", monthly: "Mensal", yearly: "Anual", installments: "Parcelada" };
+
+/** Meses que o lançamento pode alcançar: deste mês até o fim do ano seguinte. */
+function mesesFuturos({ year, m0 }: { year: number; m0: number }) {
+  const out: { v: string; label: string }[] = [];
+  for (let i = 0; i <= (year + 1) * 12 + 11 - (year * 12 + m0); i++) {
+    const v = monthStr(year, m0 + i);
+    const p = parseMonth(v);
+    out.push({ v, label: `${MESES_LONGOS[p.m0]} ${p.year}` });
+  }
+  return out;
+}
 
 const EXAMPLES = ["mercado 87,50 ontem", "spotify 31,90 no cartão", "gasolina 150"];
 
@@ -38,19 +58,20 @@ async function downscale(file: File, max = 1600): Promise<Blob> {
 export function QuickAdd({
   open,
   onClose,
-  lines,
+  tables,
   ai,
   audio,
   onSaved,
 }: {
   open: boolean;
   onClose: () => void;
-  lines: LineOpt[];
+  tables: TableOpt[];
   ai: boolean;
   audio: boolean;
   onSaved: (msg: string) => void;
 }) {
   const router = useRouter();
+  const offline = useOffline();
   const [mode, setMode] = useState<Mode>("text");
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -81,7 +102,17 @@ export function QuickAdd({
     onClose();
   }, [onClose]);
 
-  const blankManual = (): Result => ({ amount: "", description: "", lineId: "", date: today().iso, confidence: "manual", source: "manual" });
+  const blankManual = (): Result => ({
+    amount: "",
+    description: "",
+    tableId: "",
+    date: today().iso,
+    frequency: "once",
+    endMonth: null,
+    installments: "3",
+    confidence: "manual",
+    source: "manual",
+  });
 
   function pickMode(m: Mode) {
     setMode(m);
@@ -100,8 +131,11 @@ export function QuickAdd({
       setRes({
         amount: toInput(j.amountCents),
         description: j.description ?? "",
-        lineId: j.lineId ?? "",
+        tableId: j.tableId ?? "",
         date: j.date ?? today().iso,
+        frequency: "once",
+        endMonth: null,
+        installments: "3",
         confidence: j.confidence,
         engine: j.engine,
         transcript: j.transcript,
@@ -165,40 +199,67 @@ export function QuickAdd({
 
   // budgets afetados
   const month = res?.date ? res.date.slice(0, 7) + "-01" : null;
-  const impactKey = res?.lineId && month ? `${res.lineId}|${month}` : "";
+  const impactKey = res?.tableId && month ? `${res.tableId}|${month}` : "";
   useEffect(() => {
     if (!impactKey) return;
     let alive = true;
-    const [lineId, m] = impactKey.split("|");
-    budgetImpact(lineId, m).then((r) => alive && setImpactState({ key: impactKey, impacts: r.ok ? r.impacts : [] }));
+    const [tableId, m] = impactKey.split("|");
+    budgetImpact(tableId, m).then((r) => alive && setImpactState({ key: impactKey, impacts: r.ok ? r.impacts : [] }));
     return () => {
       alive = false;
     };
   }, [impactKey]);
   const impacts = impactState.key === impactKey ? impactState.impacts : [];
 
+  const mesAno = parseMonth((res?.date ?? today().iso).slice(0, 7) + "-01");
   const cents = res ? parseCents(res.amount) : 0;
-  const can = !!res && !!cents && !!res.lineId && !!res.date;
+  const ajuda = !res
+    ? ""
+    : {
+        once: `Entra só em ${MESES[mesAno.m0]}/${mesAno.year}.`,
+        monthly: `Entra todo mês a partir de ${MESES[mesAno.m0]}/${mesAno.year}${res.endMonth ? "" : ", sem data final"}.`,
+        yearly: `Entra uma vez por ano, sempre em ${MESES_LONGOS[mesAno.m0].toLowerCase()}.`,
+        installments: `Entra em ${Number(res.installments) || "N"} meses seguidos a partir de ${MESES[mesAno.m0]}/${mesAno.year}.`,
+      }[res.frequency];
+  const sufixoBotao = !res
+    ? ""
+    : { once: "", monthly: "/mês", yearly: "/ano", installments: ` × ${Number(res.installments) || "?"}` }[res.frequency];
+  const parcelasOk = !res || res.frequency !== "installments" || Number(res.installments) >= 2;
+  const can = !!res && !!cents && !!res.tableId && !!res.description.trim() && !!res.date && parcelasOk;
 
   async function confirm() {
     if (!res || !can) return;
-    setBusy(true);
-    const r = await createEntry({
-      lineId: res.lineId,
+    const label = tables.find((t) => t.id === res.tableId)?.name ?? "";
+    const dados = {
+      tableId: res.tableId,
+      name: res.description.trim(),
       amount: res.amount,
-      description: res.description,
       month: res.date.slice(0, 7) + "-01",
       occurredOn: res.date,
-      frequency: "once",
       source: res.source,
-    });
+      frequency: res.frequency,
+      endMonth: res.frequency === "monthly" || res.frequency === "yearly" ? res.endMonth : null,
+      installments: res.frequency === "installments" ? Number(res.installments) : null,
+    };
+
+    // Sem internet o lançamento vai para a fila do aparelho e sobe sozinho quando a conexão volta.
+    if (offline) {
+      await enfileirar(dados);
+      onSaved(`Guardado sem internet: ${dados.name} · ${fmtR(cents)} → ${label}`);
+      reset();
+      handleClose();
+      return;
+    }
+
+    setBusy(true);
+    const r = await addTransaction(dados);
     setBusy(false);
     if (!r.ok) {
       setError(r.error);
       return;
     }
-    const label = lines.find((l) => l.id === res.lineId)?.label ?? "";
-    onSaved(`Adicionado: ${res.description || "Gasto"} · ${fmtR(cents)} → ${label}`);
+    const meses = r.count > 1 ? ` · ${r.count} meses` : "";
+    onSaved(`Adicionado: ${dados.name} · ${fmtR(cents)}${meses} → ${label}`);
     reset();
     handleClose();
     router.refresh();
@@ -219,7 +280,7 @@ export function QuickAdd({
       subtitle={ai ? "Fale, fotografe ou escreva — a IA preenche" : "Escreva ou preencha — sem IA configurada, uso palavras-chave"}
       footer={
         <button onClick={confirm} disabled={!can || busy} className={`${btnPrimary} flex-1`}>
-          {busy && res ? "Salvando…" : can ? `Adicionar ${fmtR(cents)}` : "Adicionar"}
+          {busy && res ? "Salvando…" : can ? `Adicionar ${fmtR(cents)}${sufixoBotao}` : "Adicionar"}
         </button>
       }
     >
@@ -231,7 +292,7 @@ export function QuickAdd({
               onClick={() => pickMode(x.m)}
               aria-pressed={mode === x.m}
               className={`flex h-16 flex-col items-center justify-center gap-1 rounded-[14px] border text-[12.5px] ${
-                mode === x.m ? "border-ink bg-ink font-semibold text-white" : "border-line bg-card font-medium"
+                mode === x.m ? "border-ink bg-ink font-semibold text-on-ink" : "border-line bg-card font-medium"
               }`}
             >
               {x.icon}
@@ -239,6 +300,13 @@ export function QuickAdd({
             </button>
           ))}
         </div>
+
+        {offline && mode !== "manual" && (
+          <p className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn-ink">
+            Sem internet, foto, áudio e texto não são interpretados. Use <b>Manual</b> — o lançamento fica guardado e sobe
+            quando a conexão voltar.
+          </p>
+        )}
 
         {mode === "text" && (
           <div className="flex flex-col gap-2.5">
@@ -289,7 +357,7 @@ export function QuickAdd({
             </div>
             <div className="flex flex-1 flex-col justify-center gap-2">
               {!ai && <p className="text-xs text-warn-ink">Leitura de foto precisa da IA (ANTHROPIC_API_KEY).</p>}
-              <button disabled={!ai || busy} onClick={() => camRef.current?.click()} className="h-11 rounded-xl bg-ink text-sm font-semibold text-white disabled:opacity-50">
+              <button disabled={!ai || busy} onClick={() => camRef.current?.click()} className="h-11 rounded-xl bg-ink text-sm font-semibold text-on-ink disabled:opacity-50">
                 {busy ? "Lendo a nota…" : "Tirar foto"}
               </button>
               <button disabled={!ai || busy} onClick={() => galRef.current?.click()} className="h-11 rounded-xl border border-line text-sm disabled:opacity-50">
@@ -312,7 +380,7 @@ export function QuickAdd({
                   onClick={toggleRecord}
                   disabled={busy}
                   aria-label={recording ? "Parar gravação" : "Gravar áudio"}
-                  className={`flex size-[88px] items-center justify-center rounded-full text-white ${recording ? "bg-over ring-8 ring-over-soft" : "bg-ink"}`}
+                  className={`flex size-[88px] items-center justify-center rounded-full ${recording ? "bg-over text-white ring-8 ring-over-soft" : "bg-ink text-on-ink"}`}
                 >
                   {recording ? <span className="size-6 rounded-md bg-white" /> : <IconMic size={34} />}
                 </button>
@@ -331,8 +399,30 @@ export function QuickAdd({
           </p>
         )}
 
+        {busy && !res && (
+          <div role="status" aria-label="Interpretando" aria-busy="true" className="flex flex-col gap-3 rounded-2xl border border-edge-in-2 bg-tint-in-2 p-3.5">
+            <div className="flex items-center justify-between gap-2">
+              <Skel w={120} h={13} />
+              <Skel w={88} h={18} r={999} />
+            </div>
+            <Skel w="100%" h={52} r={14} />
+            <Skel w={96} h={11} />
+            <Skel w="100%" h={44} r={10} />
+            <Skel w={96} h={11} />
+            <Skel w="100%" h={44} r={10} />
+          </div>
+        )}
+
+        <AnimatePresence initial={false}>
         {res && (
-          <div className="flex flex-col gap-3 rounded-2xl border border-[#DDE3F2] bg-[#FAFBFE] p-3.5">
+          <motion.div
+            key="resultado"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.18 }}
+            className="flex flex-col gap-3 rounded-2xl border border-edge-in-2 bg-tint-in-2 p-3.5"
+          >
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 text-[13px] font-semibold text-in-ink">
                 <IconSpark size={14} />
@@ -347,26 +437,79 @@ export function QuickAdd({
               </span>
             </div>
             <MoneyInput value={res.amount} onChange={(v) => setRes({ ...res, amount: v })} />
-            <Field label="Descrição">
-              <input className={inputCls} value={res.description} onChange={(e) => setRes({ ...res, description: e.target.value })} placeholder="Ex.: Mercado" />
+            <Field label="Descrição (vira uma linha nova na tabela)">
+              <input
+                className={`${inputCls} ${!res.description.trim() ? "border-[1.5px] border-warn" : ""}`}
+                value={res.description}
+                onChange={(e) => setRes({ ...res, description: e.target.value })}
+                placeholder="Ex.: Mercado"
+              />
             </Field>
-            <Field label="Vai para a linha">
+            <Field label="Vai para qual tabela?">
               <select
-                className={`${inputCls} ${!res.lineId ? "border-[1.5px] border-[#D69E2E]" : ""}`}
-                value={res.lineId}
-                onChange={(e) => setRes({ ...res, lineId: e.target.value })}
+                className={`${inputCls} ${!res.tableId ? "border-[1.5px] border-warn" : ""}`}
+                value={res.tableId}
+                onChange={(e) => setRes({ ...res, tableId: e.target.value })}
               >
-                <option value="">Escolha a linha…</option>
-                {lines.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.label}
+                <option value="">Escolha a tabela…</option>
+                {tables.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
                   </option>
                 ))}
               </select>
+              {tables.length === 0 && <span className="text-xs text-muted">Crie uma tabela em Tabelas primeiro.</span>}
             </Field>
             <Field label="Data">
               <input type="date" className={inputCls} value={res.date} onChange={(e) => setRes({ ...res, date: e.target.value })} />
             </Field>
+
+            <div className="flex flex-col gap-2">
+              <span className="text-[13px] font-medium text-muted">É pontual ou se repete?</span>
+              <Segmented
+                value={res.frequency}
+                onChange={(frequency) => setRes({ ...res, frequency })}
+                options={(["once", "monthly", "yearly", "installments"] as const).map((v) => ({ value: v, label: FREQ_LABEL[v] }))}
+              />
+              <span className="text-xs text-muted">{ajuda}</span>
+            </div>
+            {(res.frequency === "monthly" || res.frequency === "yearly") && (
+              <div className="flex flex-col gap-2">
+                <label className="flex min-h-11 items-center gap-2.5 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={!res.endMonth}
+                    onChange={(e) => setRes({ ...res, endMonth: e.target.checked ? null : monthStr(mesAno.year, 11) })}
+                    className="size-5 accent-ink"
+                  />
+                  Sem data final
+                </label>
+                {res.endMonth && (
+                  <Field label="Repete até">
+                    <select className={inputCls} value={res.endMonth} onChange={(e) => setRes({ ...res, endMonth: e.target.value })}>
+                      {mesesFuturos(mesAno).map((o) => (
+                        <option key={o.v} value={o.v}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
+              </div>
+            )}
+            {res.frequency === "installments" && (
+              <Field label="Número de parcelas" hint={`${fmtR(cents)} por mês, total ${fmtR(cents * (Number(res.installments) || 0))}.`}>
+                <input
+                  type="number"
+                  min={2}
+                  max={120}
+                  className={inputCls}
+                  value={res.installments}
+                  onChange={(e) => setRes({ ...res, installments: e.target.value })}
+                />
+              </Field>
+            )}
+
             {impacts.map((b) => {
               const after = b.spentCents + b.sign * cents;
               const before = b.spentCents;
@@ -392,8 +535,9 @@ export function QuickAdd({
                 </div>
               );
             })}
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
     </Sheet>
   );

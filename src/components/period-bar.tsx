@@ -38,7 +38,7 @@ export function PeriodBar({
               href={periodHref(base, { year, size: n, start: s }, extra)}
               aria-current={on ? "true" : undefined}
               className={`flex h-10 min-w-11 items-center justify-center rounded-full border px-2.5 text-[13px] font-semibold ${
-                on ? "border-ink bg-ink text-white" : "border-line bg-card"
+                on ? "border-ink bg-ink text-on-ink" : "border-line bg-card"
               }`}
             >
               {n === 1 ? "Mês" : `${n}M`}

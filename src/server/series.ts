@@ -106,7 +106,9 @@ export async function createSeriesWithEntries(
     installments: number | null;
     through: string;
     createdBy: string;
-    source?: "manual" | "import";
+    source?: "manual" | "ai_text" | "ai_photo" | "ai_audio" | "import";
+    /** marca a primeira ocorrência, para a fila offline não duplicar a série no reenvio */
+    clientId?: string | null;
   },
 ) {
   const months = occurrenceMonths(args.frequency, args.startMonth, args.endMonth, args.installments, args.through);
@@ -131,7 +133,7 @@ export async function createSeriesWithEntries(
     .returning({ id: series.id });
   if (months.length) {
     await tx.insert(entries).values(
-      months.map((month) => ({
+      months.map((month, i) => ({
         lineId: args.lineId,
         seriesId: s.id,
         month,
@@ -139,6 +141,7 @@ export async function createSeriesWithEntries(
         description: args.description,
         createdBy: args.createdBy,
         source: args.source ?? "manual",
+        clientId: i === 0 ? (args.clientId ?? null) : null,
       })),
     );
   }

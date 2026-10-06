@@ -23,13 +23,13 @@ export default async function Onboarding({ searchParams }: PageProps<"/onboardin
             <input name="name" defaultValue="Nossas finanças" className="h-12 rounded-xl border border-line px-3.5 text-base" />
           </label>
           <p className="text-sm leading-relaxed text-muted">
-            Vamos criar as tabelas <b>Entradas</b>, <b>Saídas</b> e <b>Cartão de crédito</b> (já somando na linha “Cartão de
-            crédito” das Saídas). Você pode mudar tudo depois.
+            A planilha começa só com as tabelas <b>Entradas</b> e <b>Saídas</b>, vazias. Crie as outras do seu jeito, ou importe
+            uma planilha do Excel / Google Planilhas em <b>Ajustes</b>.
           </p>
-          <button className="h-12 rounded-xl bg-ink text-base font-semibold text-white">Criar planilha</button>
+          <button className="h-12 rounded-xl bg-ink text-base font-semibold text-on-ink">Criar planilha</button>
         </form>
         <p className="mt-5 text-sm text-muted">
-          Sua esposa já criou a planilha? Peça para ela abrir <b>Ajustes</b> e te mandar o link de convite.
+          Alguém já criou a planilha? Peça para abrir <b>Ajustes</b> e te mandar o link de convite.
         </p>
       </div>
     </main>

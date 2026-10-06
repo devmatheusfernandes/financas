@@ -1,6 +1,21 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
+
+const DESKTOP = "(min-width: 768px)";
+/** No desktop o Sheet é uma gaveta à direita; no celular, uma folha que sobe de baixo. */
+function useIsDesktop() {
+  return useSyncExternalStore(
+    (cb) => {
+      const m = window.matchMedia(DESKTOP);
+      m.addEventListener("change", cb);
+      return () => m.removeEventListener("change", cb);
+    },
+    () => window.matchMedia(DESKTOP).matches,
+    () => false,
+  );
+}
 
 export function Sheet({
   open,
@@ -35,15 +50,31 @@ export function Sheet({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  const desktop = useIsDesktop();
+  const hidden = desktop ? { x: "100%" } : { y: "100%" };
   return (
-    <div className="fixed inset-0 z-50">
-      <button aria-label="Fechar" tabIndex={-1} onClick={onClose} className="absolute inset-0 h-full w-full cursor-default bg-ink/40" />
-      <div
+    <AnimatePresence>
+      {open && (
+    <div key="sheet" className="fixed inset-0 z-50">
+      <motion.button
+        aria-label="Fechar"
+        tabIndex={-1}
+        onClick={onClose}
+        className="absolute inset-0 h-full w-full cursor-default bg-black/50"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+      />
+      <motion.div
         ref={panel}
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
+        initial={hidden}
+        animate={{ x: 0, y: 0 }}
+        exit={hidden}
+        transition={{ type: "spring", damping: 34, stiffness: 360 }}
         className="absolute inset-x-0 bottom-0 flex max-h-[94dvh] flex-col rounded-t-3xl bg-card shadow-2xl outline-none md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:w-[460px] md:rounded-none md:rounded-l-2xl"
       >
         <div className="flex justify-center pt-2 md:hidden">
@@ -60,8 +91,57 @@ export function Sheet({
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6">{children}</div>
         {footer && <div className="flex gap-2.5 border-t border-line-2 px-4 pb-7 pt-3 md:px-6 md:pb-5">{footer}</div>}
-      </div>
+      </motion.div>
     </div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/**
+ * Bloco cinza de carregamento. Use com as medidas do conteúdo real, para a tela não
+ * "pular" quando os dados chegam. `escuro` é para painéis de fundo escuro.
+ */
+export function Skel({
+  w,
+  h = 12,
+  r = 6,
+  escuro = false,
+  className = "",
+}: {
+  w?: number | string;
+  h?: number | string;
+  r?: number;
+  escuro?: boolean;
+  className?: string;
+}) {
+  return (
+    <span
+      aria-hidden
+      className={`block esqueleto ${escuro ? "esqueleto-escuro" : ""} ${className}`}
+      style={{ width: w ?? "100%", height: h, borderRadius: r }}
+    />
+  );
+}
+
+/** Envolve um esqueleto de tela inteira, anunciando o carregamento a leitores de tela. */
+export function SkelTela({ children, label = "Carregando" }: { children: ReactNode; label?: string }) {
+  return (
+    <div role="status" aria-label={label} aria-busy="true">
+      {children}
+    </div>
+  );
+}
+
+/** Preenchimento de barra de progresso que cresce até `pct` (0–100). A cor/posição vêm de `className`. */
+export function Bar({ pct, className = "" }: { pct: number; className?: string }) {
+  return (
+    <motion.span
+      className={className}
+      initial={{ width: 0 }}
+      animate={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    />
   );
 }
 
@@ -111,9 +191,9 @@ export function Field({ label, children, hint }: { label: ReactNode; children: R
 }
 
 export const inputCls = "h-11 rounded-[10px] border border-line bg-card px-3 text-[15px] w-full";
-export const btnPrimary = "h-12 rounded-[14px] bg-ink px-5 text-[15px] font-semibold text-white disabled:opacity-50";
+export const btnPrimary = "h-12 rounded-[14px] bg-ink px-5 text-[15px] font-semibold text-on-ink disabled:opacity-50";
 export const btnGhost = "h-12 rounded-[14px] border border-line bg-card px-4 text-[15px] font-semibold";
-export const btnDanger = "h-12 rounded-[14px] border border-[#E8C9B6] bg-card px-4 text-[15px] font-semibold text-[#A2400F]";
+export const btnDanger = "h-12 rounded-[14px] border border-edge-out bg-card px-4 text-[15px] font-semibold text-over-ink";
 
 export function MoneyInput({
   value,
@@ -152,11 +232,23 @@ export function Toast({ message, onDone }: { message: string | null; onDone: () 
     const t = setTimeout(onDone, 2800);
     return () => clearTimeout(t);
   }, [message, onDone]);
-  if (!message) return null;
   return (
-    <div role="status" className="fixed left-1/2 top-4 z-[60] w-[min(92vw,460px)] -translate-x-1/2 rounded-xl bg-ink px-4 py-3 text-sm text-white shadow-xl">
-      {message}
-    </div>
+    <AnimatePresence>
+      {message && (
+        <div key="toast" className="pointer-events-none fixed inset-x-0 top-4 z-[60] flex justify-center px-4">
+          <motion.div
+            role="status"
+            initial={{ opacity: 0, y: -16, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2 }}
+            className="pointer-events-auto w-[min(92vw,460px)] rounded-xl bg-ink px-4 py-3 text-sm text-on-ink shadow-xl"
+          >
+            {message}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
 

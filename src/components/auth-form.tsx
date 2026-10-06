@@ -43,7 +43,7 @@ export function AuthForm({ mode, next }: { mode: "login" | "signup"; next?: stri
     <main className="flex min-h-dvh items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-ink text-sm font-bold text-white">R$</span>
+          <span className="flex size-10 items-center justify-center rounded-xl bg-ink text-sm font-bold text-on-ink">R$</span>
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-muted">Controle financeiro</p>
             <h1 className="text-2xl font-semibold tracking-tight">{mode === "login" ? "Entrar" : "Criar conta"}</h1>
@@ -76,7 +76,7 @@ export function AuthForm({ mode, next }: { mode: "login" | "signup"; next?: stri
               {error}
             </p>
           )}
-          <button disabled={pending} className="h-12 rounded-xl bg-ink text-base font-semibold text-white disabled:opacity-60">
+          <button disabled={pending} className="h-12 rounded-xl bg-ink text-base font-semibold text-on-ink disabled:opacity-60">
             {pending ? "Aguarde…" : mode === "login" ? "Entrar" : "Criar conta"}
           </button>
         </form>

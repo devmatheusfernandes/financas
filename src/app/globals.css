@@ -11,6 +11,7 @@
   --color-soft: #fafbf9;
   --color-soft-2: #f1f2ef;
   --color-ink: #16191b;
+  --color-on-ink: #ffffff;
   --color-ink-2: #2f3431;
   --color-muted: #5e655f;
   --color-faint: #a6aba5;
@@ -25,16 +26,111 @@
   --color-warn-ink: #8a5a0b;
   --color-warn-soft: #fbefd9;
   --color-over: #c2410c;
+  --color-over-ink: #9a3412;
   --color-over-soft: #fbe3d6;
   --color-link: #6b4bb0;
   --color-link-ink: #4a3485;
   --color-link-soft: #f5f2fb;
+  /* painéis que são escuros nos dois temas (resumos, cabeçalhos) */
+  --color-panel: #16191b;
+  /* fundos e bordas levemente coloridos */
+  --color-tint-in: #f1f4fc;
+  --color-tint-in-2: #fafbfe;
+  --color-tint-link: #fbfafe;
+  --color-edge-in: #bfcdf0;
+  --color-edge-in-2: #dde3f2;
+  --color-edge-link: #ddd3f0;
+  --color-edge-out: #e8c9b6;
+  /* esqueletos de carregamento */
+  --color-skel: #dcdfd9;
+  --color-skel-brilho: #ffffffcc;
+}
+
+/* Tema escuro: o atributo data-theme no <html> é posto antes da pintura (script no layout).
+   Atributo, e não classe, porque o React gerencia o className do <html> e o sobrescreve. */
+[data-theme="dark"] {
+  --color-bg: #0f1211;
+  --color-card: #181c1a;
+  --color-soft: #1d2220;
+  --color-soft-2: #232826;
+  --color-ink: #eceee9;
+  --color-on-ink: #111412;
+  --color-ink-2: #cfd3cc;
+  --color-muted: #9aa29b;
+  --color-faint: #6b726c;
+  --color-line: #2c322e;
+  --color-line-2: #242a26;
+  --color-in: #6c97f0;
+  --color-in-ink: #8fb2f7;
+  --color-in-soft: #1c2840;
+  --color-out: #e0803f;
+  --color-neg: #f09a62;
+  --color-warn: #e2b04a;
+  --color-warn-ink: #f0c870;
+  --color-warn-soft: #3a2d12;
+  --color-over: #e8672f;
+  --color-over-ink: #ffb48a;
+  --color-over-soft: #3d2216;
+  --color-link: #a58ae0;
+  --color-link-ink: #c1aff0;
+  --color-link-soft: #241f33;
+  --color-panel: #262c28;
+  --color-tint-in: #1a2236;
+  --color-tint-in-2: #161d2e;
+  --color-tint-link: #1e1a2b;
+  --color-edge-in: #2f4271;
+  --color-edge-in-2: #26345a;
+  --color-edge-link: #3a3160;
+  --color-edge-out: #5a3a26;
+  --color-skel: #2b322e;
+  --color-skel-brilho: #ffffff1f;
+}
+
+:root {
+  color-scheme: light;
+}
+[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 html,
 body {
   background: var(--color-bg);
   color: var(--color-ink);
+}
+
+/* Esqueletos de carregamento: um brilho que atravessa o bloco. */
+@keyframes brilho {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.esqueleto {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-skel);
+}
+.esqueleto::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--color-skel-brilho), transparent);
+  animation: brilho 1.6s infinite;
+}
+/* Dentro de painéis escuros (resumos), que são escuros nos dois temas. */
+.esqueleto-escuro {
+  background: #3a4140;
+}
+.esqueleto-escuro::after {
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.14), transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto::after {
+    animation: none;
+  }
 }
 
 .num {

@@ -100,7 +100,7 @@ export function BudgetForm({ initial, tables, year, curM0 }: { initial: BudgetIn
         <span className="text-xs text-muted">Pode somar várias origens — ex.: a linha Alimentação + as compras de mercado do Cartão.</span>
       </div>
 
-      <div className="flex flex-col gap-2.5 rounded-2xl border border-[#DDE3F2] bg-[#FAFBFE] p-3.5">
+      <div className="flex flex-col gap-2.5 rounded-2xl border border-edge-in-2 bg-tint-in-2 p-3.5">
         <span className="flex items-center gap-1.5 text-[13px] font-semibold text-in-ink">
           <IconSpark size={14} /> Sugestão
         </span>
@@ -116,7 +116,7 @@ export function BudgetForm({ initial, tables, year, curM0 }: { initial: BudgetIn
                 setLimit(toInput(suggestion.rounded));
                 setMode("same");
               }}
-              className="h-10 self-start rounded-[10px] border border-[#BFCDF0] bg-card px-3.5 text-[13px] font-semibold text-in-ink"
+              className="h-10 self-start rounded-[10px] border border-edge-in bg-card px-3.5 text-[13px] font-semibold text-in-ink"
             >
               Usar {fmtR(suggestion.rounded)}/mês
             </button>
@@ -144,7 +144,7 @@ export function BudgetForm({ initial, tables, year, curM0 }: { initial: BudgetIn
           <>
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
               {MESES.map((m, i) => (
-                <label key={m} className={`flex flex-col gap-0.5 rounded-[10px] border px-2 py-1.5 ${i === curM0 ? "border-[#BFCDF0] bg-[#F5F8FE]" : "border-line"}`}>
+                <label key={m} className={`flex flex-col gap-0.5 rounded-[10px] border px-2 py-1.5 ${i === curM0 ? "border-edge-in bg-tint-in" : "border-line"}`}>
                   <span className="text-[11px] uppercase tracking-wider text-muted">{m}</span>
                   <input
                     inputMode="decimal"
@@ -169,7 +169,7 @@ export function BudgetForm({ initial, tables, year, curM0 }: { initial: BudgetIn
               key={n}
               aria-pressed={alert === n}
               onClick={() => setAlert(n)}
-              className={`h-11 flex-1 rounded-[10px] border text-sm ${alert === n ? "border-ink bg-ink font-semibold text-white" : "border-line bg-card"}`}
+              className={`h-11 flex-1 rounded-[10px] border text-sm ${alert === n ? "border-ink bg-ink font-semibold text-on-ink" : "border-line bg-card"}`}
             >
               {n}%
             </button>

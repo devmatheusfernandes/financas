@@ -26,7 +26,7 @@ export default async function InvitePage({ params }: PageProps<"/convite/[token]
             <h1 className="mt-1 text-xl font-semibold">Entrar em “{h.name}”</h1>
             {!session ? (
               <div className="mt-6 flex flex-col gap-3">
-                <Link href={`/cadastro?next=${encodeURIComponent(next)}`} className="flex h-12 items-center justify-center rounded-xl bg-ink font-semibold text-white">
+                <Link href={`/cadastro?next=${encodeURIComponent(next)}`} className="flex h-12 items-center justify-center rounded-xl bg-ink font-semibold text-on-ink">
                   Criar conta e entrar
                 </Link>
                 <Link href={`/login?next=${encodeURIComponent(next)}`} className="flex h-12 items-center justify-center rounded-xl border border-line font-semibold">
@@ -43,7 +43,7 @@ export default async function InvitePage({ params }: PageProps<"/convite/[token]
             ) : (
               <form action={joinHousehold} className="mt-6">
                 <input type="hidden" name="token" value={token} />
-                <button className="h-12 w-full rounded-xl bg-ink font-semibold text-white">Entrar na planilha</button>
+                <button className="h-12 w-full rounded-xl bg-ink font-semibold text-on-ink">Entrar na planilha</button>
               </form>
             )}
           </>

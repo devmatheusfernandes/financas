@@ -54,7 +54,7 @@ export function LinkEditor({
     k.startsWith("t:") ? { refTableId: k.slice(2), refLineId: null, sign } : { refTableId: null, refLineId: k.slice(2), sign };
 
   return (
-    <div className="flex flex-col gap-2.5 rounded-2xl border border-[#DDD3F0] bg-[#FBFAFE] p-3.5">
+    <div className="flex flex-col gap-2.5 rounded-2xl border border-edge-link bg-tint-link p-3.5">
       <div className="flex items-center gap-2 text-[13px] font-semibold text-link-ink">
         <IconLink size={14} /> {title}
       </div>
@@ -67,7 +67,7 @@ export function LinkEditor({
               onClick={() => setAt(i, { ...s, sign: s.sign === 1 ? -1 : 1 })}
               aria-label={s.sign === 1 ? "Somando — trocar para subtrair" : "Subtraindo — trocar para somar"}
               className={`num size-10 shrink-0 rounded-[10px] border text-lg font-semibold ${
-                s.sign === 1 ? "border-[#BFCDF0] bg-in-soft text-in-ink" : "border-[#E8C9B6] bg-over-soft text-neg"
+                s.sign === 1 ? "border-edge-in bg-in-soft text-in-ink" : "border-edge-out bg-over-soft text-neg"
               }`}
             >
               {s.sign === 1 ? "+" : "−"}
@@ -114,19 +114,19 @@ export function LinkEditor({
             tableOpts[0] ? { refTableId: tableOpts[0].id, refLineId: null, sign: 1 } : { refTableId: null, refLineId: lineOpts[0]?.id ?? null, sign: 1 },
           ])
         }
-        className="h-10 self-start rounded-[10px] border-[1.5px] border-dashed border-[#C9BDE6] bg-card px-3 text-[13px] font-medium text-link-ink"
+        className="h-10 self-start rounded-[10px] border-[1.5px] border-dashed border-edge-link bg-card px-3 text-[13px] font-medium text-link-ink"
       >
         + Adicionar origem
       </button>
       {showPreview && (
         <>
-          <div className="flex items-baseline justify-between border-t border-[#E6E0F3] pt-2.5">
+          <div className="flex items-baseline justify-between border-t border-edge-link pt-2.5">
             <span className="text-[13px] text-muted">Resultado em {MESES[month]}</span>
             <span className="num text-xl font-semibold">{fmt(result[month])}</span>
           </div>
           <div className="grid grid-cols-4 gap-1 sm:grid-cols-6">
             {result.map((v, m) => (
-              <div key={m} className={`flex flex-col rounded-md border px-1.5 py-1 ${m === month ? "border-[#BFCDF0] bg-in-soft text-in-ink" : "border-[#ECE8F5] bg-card"}`}>
+              <div key={m} className={`flex flex-col rounded-md border px-1.5 py-1 ${m === month ? "border-edge-in bg-in-soft text-in-ink" : "border-edge-link bg-card"}`}>
                 <span className="text-[10px] uppercase tracking-wider text-muted">{MESES[m]}</span>
                 <span className="num text-[11px]">{fmt(v)}</span>
               </div>

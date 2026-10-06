@@ -103,19 +103,3 @@ export async function loadBudgets(householdId: string, year: number, grid?: Awai
   });
   return { budgets: views, data };
 }
-
-/** Lista "Tabela › Linha" para selects (somente linhas não vinculadas aceitam lançamentos). */
-export function linePickerOptions(structure: { tables: TableRow[]; lines: LineRow[] }) {
-  const tableById = new Map(structure.tables.map((t) => [t.id, t]));
-  return structure.lines
-    .filter((l) => !l.isLinked)
-    .map((l) => {
-      const t = tableById.get(l.tableId)!;
-      return { id: l.id, tableId: l.tableId, label: `${t.name} › ${l.name}`, kind: t.kind, color: t.color };
-    })
-    .sort((a, b) => {
-      const ta = structure.tables.findIndex((t) => t.id === a.tableId);
-      const tb = structure.tables.findIndex((t) => t.id === b.tableId);
-      return ta - tb;
-    });
-}

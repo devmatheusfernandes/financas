@@ -21,6 +21,8 @@
     "ai": "^7.0.128",
     "better-auth": "^1.7.7",
     "drizzle-orm": "^0.45.3",
+    "exceljs": "^4.4.0",
+    "framer-motion": "^14.0.0",
     "geist": "^1.7.2",
     "next": "16.4.0",
     "pg": "^8.23.1",

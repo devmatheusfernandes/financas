@@ -1,14 +1,14 @@
 import { AppShell } from "@/components/app-shell";
 import { requireHousehold } from "@/lib/session";
 import { aiEnabled, audioEnabled } from "@/server/ai";
-import { linePickerOptions, loadStructure } from "@/server/data";
+import { loadStructure } from "@/server/data";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const h = await requireHousehold();
   const structure = await loadStructure(h.householdId);
-  const lines = linePickerOptions(structure).map((l) => ({ id: l.id, label: l.label }));
+  const tables = structure.tables.map((t) => ({ id: t.id, name: t.name, kind: t.kind }));
   return (
-    <AppShell lines={lines} ai={aiEnabled()} audio={audioEnabled()} householdName={h.householdName}>
+    <AppShell tables={tables} ai={aiEnabled()} audio={audioEnabled()} householdName={h.householdName}>
       {children}
     </AppShell>
   );

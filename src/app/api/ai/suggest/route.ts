@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getMembership, getSession } from "@/lib/session";
-import { loadStructure, linePickerOptions } from "@/server/data";
+import { loadStructure } from "@/server/data";
 import { aiEnabled, audioEnabled, suggestWithAI, suggestWithRules, transcribeAudio, type Suggestion } from "@/server/ai";
 
 export const maxDuration = 60;
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const file = form.get("file");
 
   const structure = await loadStructure(m.householdId);
-  const lines = linePickerOptions(structure).map((l) => ({ id: l.id, label: l.label }));
+  const tables = structure.tables.map((t) => ({ id: t.id, name: t.name, kind: t.kind }));
 
   try {
     let result: Suggestion;
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       }
       result = await suggestWithAI({
         image: { data: new Uint8Array(await file.arrayBuffer()), mediaType: file.type || "image/jpeg" },
-        lines,
+        tables,
       });
     } else if (mode === "audio") {
       if (!(file instanceof File)) return NextResponse.json({ error: "Envie um áudio" }, { status: 400 });
@@ -43,17 +43,17 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Transcrição precisa de OPENAI_API_KEY." }, { status: 501 });
       }
       const transcript = await transcribeAudio(new Uint8Array(await file.arrayBuffer()));
-      result = aiEnabled() ? await suggestWithAI({ text: transcript, lines }) : suggestWithRules(transcript, lines);
+      result = aiEnabled() ? await suggestWithAI({ text: transcript, tables }) : suggestWithRules(transcript, tables);
       result.transcript = transcript;
     } else {
       if (!text.trim()) return NextResponse.json({ error: "Escreva o gasto" }, { status: 400 });
-      result = aiEnabled() ? await suggestWithAI({ text, lines }) : suggestWithRules(text, lines);
+      result = aiEnabled() ? await suggestWithAI({ text, tables }) : suggestWithRules(text, tables);
     }
     return NextResponse.json(result);
   } catch (e) {
     console.error(e);
     // Se a IA falhar com texto, ainda dá para usar as regras
-    if (text.trim()) return NextResponse.json(suggestWithRules(text, lines));
+    if (text.trim()) return NextResponse.json(suggestWithRules(text, tables));
     return NextResponse.json({ error: "Não consegui interpretar. Tente de novo ou use o modo manual." }, { status: 500 });
   }
 }

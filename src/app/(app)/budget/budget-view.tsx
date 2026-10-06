@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { IconChevron, IconLink } from "@/components/ui";
+import { Bar, IconChevron, IconLink } from "@/components/ui";
 import { MESES, MESES_LONGOS, daysInMonth, fmt, fmtR } from "@/lib/format";
 
 type B = { id: string; name: string; alertPct: number; limits: number[]; spent: number[]; sources: string[] };
@@ -18,7 +18,7 @@ const BAR: Record<Status, string> = { ok: "bg-in", warn: "bg-warn", over: "bg-ov
 const CELL: Record<Status, string> = {
   ok: "bg-in-soft text-in-ink",
   warn: "bg-warn-soft text-warn-ink",
-  over: "bg-over-soft text-[#9A3412]",
+  over: "bg-over-soft text-over-ink",
   none: "bg-soft-2 text-faint",
 };
 
@@ -55,7 +55,7 @@ export function BudgetView({ budgets, year, m0, today }: { budgets: B[]; year: n
         </div>
       </div>
 
-      <section className="flex flex-col gap-3.5 rounded-[20px] bg-ink p-[18px] text-white md:max-w-3xl">
+      <section className="flex flex-col gap-3.5 rounded-[20px] bg-panel p-[18px] text-white md:max-w-3xl">
         <div className="flex items-end justify-between gap-2.5">
           <div className="flex flex-col gap-1">
             <span className="text-[13px] text-[#B5BBB5]">Gasto nos budgets</span>
@@ -67,9 +67,9 @@ export function BudgetView({ budgets, year, m0, today }: { budgets: B[]; year: n
           </div>
         </div>
         <div className="relative h-2.5 rounded-full bg-[#2C3133]">
-          <div
+          <Bar
             className={`absolute inset-y-0 left-0 rounded-full ${sumS > sumL ? "bg-[#F09A62]" : sumS >= sumL * 0.8 ? "bg-[#E2B04A]" : "bg-[#7FA6F5]"}`}
-            style={{ width: `${sumL ? Math.min(100, (sumS / sumL) * 100) : 0}%` }}
+            pct={sumL ? (sumS / sumL) * 100 : 0}
           />
           {pace !== null && <span title="Hoje" className="absolute -inset-y-1 w-0.5 rounded bg-white" style={{ left: `calc(${pace}% - 1px)` }} />}
         </div>
@@ -130,7 +130,7 @@ export function BudgetView({ budgets, year, m0, today }: { budgets: B[]; year: n
                   </span>
                 </span>
                 <span className="relative block h-2 w-full rounded-full bg-line-2">
-                  <span className={`absolute inset-y-0 left-0 rounded-full ${BAR[st]}`} style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
+                  <Bar className={`absolute inset-y-0 left-0 rounded-full ${BAR[st]}`} pct={pct} />
                   {pace !== null && <span className="absolute -inset-y-[3px] w-0.5 rounded bg-ink" style={{ left: `calc(${pace}% - 1px)` }} />}
                 </span>
                 <span className="flex w-full justify-between gap-2 text-[12.5px]">
@@ -146,7 +146,7 @@ export function BudgetView({ budgets, year, m0, today }: { budgets: B[]; year: n
                     return (
                       <div key={k} className="grid grid-cols-[36px_1fr_132px] items-center gap-2">
                         <span className={`text-xs ${k === m0 ? "font-semibold" : "text-muted"}`}>{MESES[k]}</span>
-                        <span className="block h-1.5 overflow-hidden rounded-full bg-[#E6E8E3]">
+                        <span className="block h-1.5 overflow-hidden rounded-full bg-line">
                           <span className={`block h-full rounded-full ${BAR[s2]}`} style={{ width: `${b.limits[k] ? Math.min(100, (b.spent[k] / b.limits[k]) * 100) : 0}%` }} />
                         </span>
                         <span className="num text-right text-[11.5px] text-muted">

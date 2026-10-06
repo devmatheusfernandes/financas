@@ -3,9 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useToast } from "@/components/app-shell";
+import { limparCacheOffline } from "@/lib/offline-cache";
+import { ThemeSetting } from "@/components/theme";
 import { Field, inputCls } from "@/components/ui";
 import { authClient } from "@/lib/auth-client";
 import { regenerateInvite, renameHousehold } from "@/server/actions";
+import { ImportExport } from "./import-export";
 
 export function SettingsClient({
   householdName,
@@ -47,7 +50,7 @@ export function SettingsClient({
                   router.refresh();
                 } else toast(r.error);
               }}
-              className="h-11 shrink-0 rounded-[10px] bg-ink px-4 text-sm font-semibold text-white"
+              className="h-11 shrink-0 rounded-[10px] bg-ink px-4 text-sm font-semibold text-on-ink"
             >
               Salvar
             </button>
@@ -69,7 +72,7 @@ export function SettingsClient({
           ))}
         </ul>
         <div className="flex flex-col gap-2 rounded-xl bg-soft p-3">
-          <span className="text-[13px] font-medium">Convidar alguém (ex.: sua esposa)</span>
+          <span className="text-[13px] font-medium">Convidar alguém</span>
           <span className="text-xs text-muted">Quem abrir este link e criar uma conta entra nesta mesma planilha.</span>
           <input readOnly value={url} className={`${inputCls} num text-xs`} onFocus={(e) => e.currentTarget.select()} />
           <div className="flex gap-2">
@@ -83,7 +86,7 @@ export function SettingsClient({
                   }
                 } catch {}
               }}
-              className="h-10 flex-1 rounded-[10px] bg-ink text-sm font-semibold text-white"
+              className="h-10 flex-1 rounded-[10px] bg-ink text-sm font-semibold text-on-ink"
             >
               Compartilhar link
             </button>
@@ -103,6 +106,10 @@ export function SettingsClient({
         </div>
       </section>
 
+      <ThemeSetting />
+
+      <ImportExport />
+
       <section className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4 text-sm">
         <h2 className="text-[15px] font-semibold">IA</h2>
         <p className="text-muted">
@@ -114,6 +121,7 @@ export function SettingsClient({
       <button
         onClick={async () => {
           await authClient.signOut();
+          await limparCacheOffline(); // nada desta sessão fica guardado no aparelho
           router.replace("/login");
           router.refresh();
         }}

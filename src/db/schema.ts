@@ -177,6 +177,8 @@ export const entries = pgTable(
     description: text("description"),
     occurredOn: date("occurred_on"),
     source: entrySource("source").notNull().default("manual"),
+    /** id gerado no aparelho para lançamentos feitos offline: impede duplicar no reenvio */
+    clientId: text("client_id").unique(),
     createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },

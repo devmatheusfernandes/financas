@@ -69,7 +69,7 @@ export function TablesManager({ tables, linkTables, curM0 }: { tables: T[]; link
           <span className="text-xs font-medium uppercase tracking-wider text-muted">Estrutura</span>
           <h1 className="text-[26px] font-semibold tracking-tight">Tabelas e linhas</h1>
         </div>
-        <button onClick={() => setDialog({ kind: "newTable" })} className="h-11 rounded-xl bg-ink px-4 text-sm font-semibold text-white">
+        <button onClick={() => setDialog({ kind: "newTable" })} className="h-11 rounded-xl bg-ink px-4 text-sm font-semibold text-on-ink">
           + Nova tabela
         </button>
       </div>

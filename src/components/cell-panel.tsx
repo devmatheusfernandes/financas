@@ -7,6 +7,7 @@ import { MESES, MESES_LONGOS, fmtR, monthStr, parseCents, toInput } from "@/lib/
 import type { SheetLine, SheetTable } from "@/app/(app)/planilha/sheet-view";
 import { useToast } from "./app-shell";
 import { LinkEditor, type LinkSource } from "./link-editor";
+import { SkeletonLista } from "./skeletons";
 import { Field, MoneyInput, Segmented, Sheet, btnDanger, btnGhost, btnPrimary, inputCls } from "./ui";
 
 type View = { kind: "loading" } | { kind: "list" } | { kind: "new" } | { kind: "edit"; entry: CellEntry } | { kind: "link" };
@@ -78,7 +79,7 @@ export function CellPanel({
         </p>
       )}
 
-      {view.kind === "loading" && <p className="text-sm text-muted">Carregando…</p>}
+      {view.kind === "loading" && <SkeletonLista />}
 
       {view.kind === "list" && (
         <div className="flex flex-col gap-3">
@@ -360,7 +361,7 @@ function EditEntryForm({
               ["all", "Toda a série", "Muda todas as ocorrências."],
             ] as const
           ).map(([v, label, help]) => (
-            <label key={v} className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 ${scope === v ? "border-[#BFCDF0] bg-[#F1F4FC]" : "border-line"}`}>
+            <label key={v} className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 ${scope === v ? "border-edge-in bg-tint-in" : "border-line"}`}>
               <input type="radio" name="scope" checked={scope === v} onChange={() => setScope(v)} className="mt-0.5 size-[18px] accent-ink" />
               <span className="flex flex-col">
                 <span className="text-sm font-semibold">{label}</span>

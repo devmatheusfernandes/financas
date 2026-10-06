@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { PeriodBar } from "@/components/period-bar";
 import { CellPanel } from "@/components/cell-panel";
-import { IconChevron, IconLink } from "@/components/ui";
+import { Bar, IconChevron, IconLink } from "@/components/ui";
 import { MESES, MESES_LONGOS, fmt, fmtR } from "@/lib/format";
 import { periodHref } from "@/lib/period";
 
@@ -68,7 +68,7 @@ export function SheetView({ data, period, view }: { data: SheetData; period: Per
       </div>
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="grid grid-cols-2 rounded-xl bg-[#E4E6E1] p-1 md:w-[300px]">
+        <div className="grid grid-cols-2 rounded-xl bg-line p-1 md:w-[300px]">
           {(["completa", "simples"] as const).map((v) => (
             <Link
               key={v}
@@ -86,7 +86,7 @@ export function SheetView({ data, period, view }: { data: SheetData; period: Per
       <div className="grid grid-cols-3 gap-2 md:max-w-[720px]">
         <Kpi label="Entradas" color="bg-in" value={inT} />
         <Kpi label="Saídas" color="bg-out" value={outT} />
-        <div className="flex flex-col gap-1 rounded-xl bg-ink px-3 py-2.5 text-white">
+        <div className="flex flex-col gap-1 rounded-xl bg-panel px-3 py-2.5 text-white">
           <span className="text-[11px] text-[#B5BBB5]">Balanço</span>
           <span className={`num text-sm font-semibold md:text-lg ${balT < 0 ? "text-[#FFB48A]" : "text-[#B9D0FF]"}`}>{fmt(balT)}</span>
         </div>
@@ -94,7 +94,8 @@ export function SheetView({ data, period, view }: { data: SheetData; period: Per
 
       {data.tables.length === 0 && (
         <div className="rounded-2xl border border-dashed border-line bg-card p-6 text-center text-sm text-muted">
-          Nenhuma tabela ainda. <Link className="font-semibold text-in" href="/tabelas">Criar tabelas</Link>
+          Nenhuma tabela ainda. <Link className="font-semibold text-in" href="/tabelas">Criar tabelas</Link> ou{" "}
+          <Link className="font-semibold text-in" href="/ajustes">importar uma planilha</Link>.
         </div>
       )}
 
@@ -156,7 +157,7 @@ function Kpi({ label, value, color }: { label: string; value: number; color: str
 function MonthHeader({ months, cur, dark = false, label = "Item" }: { months: number[]; cur: number; dark?: boolean; label?: string }) {
   return (
     <div className={`flex ${dark ? "" : "bg-soft"}`}>
-      <div className={`sticky left-0 z-[1] w-[112px] shrink-0 px-3 py-2 text-[11px] uppercase tracking-wider md:w-[240px] md:px-4 ${dark ? "bg-ink text-[#9AA19B]" : "bg-soft text-muted"}`}>
+      <div className={`sticky left-0 z-[1] w-[112px] shrink-0 px-3 py-2 text-[11px] uppercase tracking-wider md:w-[240px] md:px-4 ${dark ? "bg-panel text-[#9AA19B]" : "bg-soft text-muted"}`}>
         {label}
       </div>
       {months.map((m) => (
@@ -235,7 +236,7 @@ function TableCard({
                       key={m}
                       onClick={() => onSelect(l.id, m)}
                       aria-label={`${l.name}, ${MESES_LONGOS[m]}: ${fmtR(l.vals[m])}`}
-                      className={`num relative min-w-[86px] flex-1 px-2.5 py-2.5 text-right text-[12.5px] hover:bg-soft ${m === cur ? "bg-[#F1F4FC]" : ""} ${
+                      className={`num relative min-w-[86px] flex-1 px-2.5 py-2.5 text-right text-[12.5px] hover:bg-soft ${m === cur ? "bg-tint-in" : ""} ${
                         l.isLinked && l.vals[m] ? "text-link-ink" : cellTone(l.vals[m])
                       } ${on ? "shadow-[inset_0_0_0_2px_var(--color-in)]" : ""}`}
                     >
@@ -253,7 +254,7 @@ function TableCard({
           <div className="flex border-t border-line bg-soft">
             <div className="sticky left-0 z-[1] w-[112px] shrink-0 bg-soft px-3 py-2.5 text-[13px] font-semibold md:w-[240px] md:px-4">Total</div>
             {months.map((m) => (
-              <div key={m} className={`num min-w-[86px] flex-1 px-2.5 py-2.5 text-right text-[12.5px] font-semibold ${m === cur ? "bg-[#F1F4FC]" : ""} ${cellTone(t.sum[m])}`}>
+              <div key={m} className={`num min-w-[86px] flex-1 px-2.5 py-2.5 text-right text-[12.5px] font-semibold ${m === cur ? "bg-tint-in" : ""} ${cellTone(t.sum[m])}`}>
                 {fmt(t.sum[m])}
               </div>
             ))}
@@ -274,7 +275,7 @@ function TableCard({
 function BalanceCard({ months, balance, total, cur }: { months: number[]; balance: number[]; total: number; cur: number }) {
   const tone = (v: number) => (v < 0 ? "text-[#FFB48A]" : "text-[#B9D0FF]");
   return (
-    <section className="overflow-hidden rounded-2xl bg-ink text-white">
+    <section className="overflow-hidden rounded-2xl bg-panel text-white">
       <div className="flex items-center gap-2.5 px-3.5 pb-3 pt-3.5">
         <span className="flex flex-1 flex-col">
           <span className="text-[15px] font-semibold">Balanço</span>
@@ -286,7 +287,7 @@ function BalanceCard({ months, balance, total, cur }: { months: number[]; balanc
         <div className="flex w-max min-w-full flex-col">
           <MonthHeader months={months} cur={cur} dark label="Mês" />
           <div className="flex">
-            <div className="sticky left-0 z-[1] w-[112px] shrink-0 bg-ink px-3 py-2.5 text-[13px] font-semibold md:w-[240px] md:px-4">Saldo</div>
+            <div className="sticky left-0 z-[1] w-[112px] shrink-0 bg-panel px-3 py-2.5 text-[13px] font-semibold md:w-[240px] md:px-4">Saldo</div>
             {months.map((m) => (
               <div key={m} className={`num min-w-[86px] flex-1 px-2.5 py-2.5 text-right text-[12.5px] font-semibold ${m === cur ? "bg-white/5" : ""} ${tone(balance[m])}`}>
                 {fmt(balance[m])}
@@ -310,7 +311,7 @@ function Simplified({ data, months, period }: { data: SheetData; months: number[
 
   return (
     <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <section className="flex flex-col gap-4 rounded-[20px] bg-ink p-5 text-white md:col-span-2">
+      <section className="flex flex-col gap-4 rounded-[20px] bg-panel p-5 text-white md:col-span-2">
         <div className="flex flex-col gap-1.5">
           <span className="text-[13px] text-[#B5BBB5]">Balanço do período · a reservar</span>
           <span className={`num text-[34px] font-semibold tracking-tight ${bal < 0 ? "text-[#FFB48A]" : ""}`}>{fmtR(bal)}</span>
@@ -331,7 +332,7 @@ function Simplified({ data, months, period }: { data: SheetData; months: number[
         </div>
         <div className="flex flex-col gap-2">
           <div className="h-2 overflow-hidden rounded-full bg-[#2C3133]">
-            <div className="h-full rounded-full bg-[#F09A62]" style={{ width: `${Math.min(100, pct)}%` }} />
+            <Bar className="block h-full rounded-full bg-[#F09A62]" pct={pct} />
           </div>
           <span className="text-xs text-[#B5BBB5]">As saídas consumiram {pct}% das entradas no período</span>
         </div>
@@ -348,7 +349,7 @@ function Simplified({ data, months, period }: { data: SheetData; months: number[
             <Link
               key={m}
               href={periodHref("/planilha", { year: period.year, size: 1, start: m }, { v: "completa" })}
-              className={`flex flex-col gap-2 border-t border-line-2 px-4 py-3 ${m === period.curM0 ? "bg-[#F6F8FD]" : ""}`}
+              className={`flex flex-col gap-2 border-t border-line-2 px-4 py-3 ${m === period.curM0 ? "bg-tint-in" : ""}`}
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-2 text-sm font-semibold">

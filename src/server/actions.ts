@@ -161,6 +161,88 @@ export async function createEntry(input: z.input<typeof createEntrySchema>): Pro
   }
 }
 
+const addTransactionSchema = z.object({
+  tableId: z.string().uuid(),
+  name: z.string().trim().min(1, "Dê um nome ao lançamento").max(80),
+  amount: z.string(),
+  month: monthSchema,
+  occurredOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  source: z.enum(["manual", "ai_text", "ai_photo", "ai_audio"]).optional().default("manual"),
+  /** vem da fila offline; reenviar o mesmo id não cria um segundo lançamento */
+  clientId: z.string().uuid().nullable().optional(),
+  /** pontual ou repetido; igual ao painel de célula */
+  frequency: z.enum(["once", "monthly", "yearly", "installments"]).optional().default("once"),
+  endMonth: monthSchema.nullable().optional(),
+  installments: z.coerce.number().int().min(1).max(120).nullable().optional(),
+});
+
+/**
+ * Cada lançamento rápido vira uma linha nova na tabela escolhida.
+ * Pontual gera um lançamento só; repetido gera a regra e as ocorrências de cada mês.
+ */
+export async function addTransaction(
+  input: z.input<typeof addTransactionSchema>,
+): Promise<Result<{ lineId: string; count: number }>> {
+  try {
+    const { householdId, userId } = await requireHousehold();
+    const d = addTransactionSchema.parse(input);
+    await assertTable(householdId, d.tableId);
+    const amountCents = parseCents(d.amount);
+    if (!amountCents) return { ok: false, error: "Informe um valor" };
+
+    if (d.endMonth && monthDiff(d.month, d.endMonth) < 0) return { ok: false, error: "O mês final é antes do inicial" };
+
+    if (d.clientId) {
+      const [ja] = await db.select({ lineId: entries.lineId }).from(entries).where(eq(entries.clientId, d.clientId));
+      if (ja) return { ok: true, lineId: ja.lineId, count: 0 }; // já tinha chegado antes
+    }
+
+    const { year } = parseMonth(d.month);
+    const through = monthStr(Math.max(year, today().year) + 1, 11);
+
+    const r = await db.transaction(async (tx) => {
+      const [{ maxSort }] = await tx.select({ maxSort: max(lines.sort) }).from(lines).where(eq(lines.tableId, d.tableId));
+      const [l] = await tx
+        .insert(lines)
+        .values({ tableId: d.tableId, name: d.name, sort: (maxSort ?? 0) + 1 })
+        .returning({ id: lines.id });
+
+      if (d.frequency === "once") {
+        await tx.insert(entries).values({
+          lineId: l.id,
+          month: d.month,
+          amountCents,
+          description: d.name,
+          occurredOn: d.occurredOn ?? null,
+          source: d.source,
+          clientId: d.clientId ?? null,
+          createdBy: userId,
+        });
+        return { lineId: l.id, count: 1 };
+      }
+
+      const s = await createSeriesWithEntries(tx, {
+        lineId: l.id,
+        frequency: d.frequency,
+        amountCents,
+        description: d.name,
+        startMonth: d.month,
+        endMonth: d.frequency === "monthly" || d.frequency === "yearly" ? (d.endMonth ?? null) : null,
+        installments: d.frequency === "installments" ? (d.installments ?? 2) : null,
+        through,
+        createdBy: userId,
+        source: d.source,
+        clientId: d.clientId ?? null,
+      });
+      return { lineId: l.id, count: s.count };
+    });
+    refresh();
+    return { ok: true, ...r };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 export type CellEntry = {
   id: string;
   amountCents: number;
@@ -640,19 +722,18 @@ export async function deleteBudget(budgetId: string): Promise<Result> {
 
 export type BudgetImpact = { name: string; limitCents: number; spentCents: number; alertPct: number; sign: number };
 
-/** Quais budgets um lançamento nesta linha afeta (para mostrar no "Adicionar rápido"). */
-export async function budgetImpact(lineId: string, month: string): Promise<Result<{ impacts: BudgetImpact[] }>> {
+/** Quais budgets um novo lançamento nesta tabela afeta (para mostrar no "Adicionar rápido"). */
+export async function budgetImpact(tableId: string, month: string): Promise<Result<{ impacts: BudgetImpact[] }>> {
   try {
     const { householdId } = await requireHousehold();
-    const line = await assertLine(householdId, lineId);
+    await assertTable(householdId, tableId);
     const { year, m0 } = parseMonth(monthSchema.parse(month));
     const { budgets: list, data } = await loadBudgets(householdId, year);
 
-    // efeito de +1 centavo nesta linha em cada budget (considera vínculos encadeados)
+    // efeito de +1 centavo numa linha nova desta tabela em cada budget (considera vínculos encadeados)
     const affects = (refTableId: string | null, refLineId: string | null): number => {
       const seen = new Set<string>();
       const walkLine = (lid: string): number => {
-        if (lid === line.id) return 1;
         if (seen.has("L" + lid)) return 0;
         seen.add("L" + lid);
         const l = data.lines.find((x) => x.id === lid);
@@ -662,6 +743,7 @@ export async function budgetImpact(lineId: string, month: string): Promise<Resul
           .reduce((acc, s) => acc + s.sign * (s.refTableId ? walkTable(s.refTableId) : walkLine(s.refLineId!)), 0);
       };
       const walkTable = (tid: string): number => {
+        if (tid === tableId) return 1;
         if (seen.has("T" + tid)) return 0;
         seen.add("T" + tid);
         return data.lines.filter((l) => l.tableId === tid).reduce((acc, l) => acc + walkLine(l.id), 0);
