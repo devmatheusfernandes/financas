@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@theme {
+  --color-bg: #f3f4f1;
+  --color-card: #ffffff;
+  --color-soft: #fafbf9;
+  --color-soft-2: #f1f2ef;
+  --color-ink: #16191b;
+  --color-ink-2: #2f3431;
+  --color-muted: #5e655f;
+  --color-faint: #a6aba5;
+  --color-line: #e3e5e0;
+  --color-line-2: #eef0eb;
+  --color-in: #2459c7;
+  --color-in-ink: #1f4fb5;
+  --color-in-soft: #e9eefa;
+  --color-out: #c2571a;
+  --color-neg: #b4471a;
+  --color-warn: #b7791f;
+  --color-warn-ink: #8a5a0b;
+  --color-warn-soft: #fbefd9;
+  --color-over: #c2410c;
+  --color-over-soft: #fbe3d6;
+  --color-link: #6b4bb0;
+  --color-link-ink: #4a3485;
+  --color-link-soft: #f5f2fb;
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* esconder a barra de rolagem horizontal em tabelas no mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-in);
+  outline-offset: 2px;
+}
