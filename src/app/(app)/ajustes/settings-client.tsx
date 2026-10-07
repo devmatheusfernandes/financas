@@ -7,7 +7,7 @@ import { limparCacheOffline } from "@/lib/offline-cache";
 import { ThemeSetting } from "@/components/theme";
 import { Field, inputCls } from "@/components/ui";
 import { authClient } from "@/lib/auth-client";
-import { regenerateInvite, renameHousehold } from "@/server/actions";
+import { regenerateInvite, renameHousehold, resetHouseholdData } from "@/server/actions";
 import { ImportExport } from "./import-export";
 
 export function SettingsClient({
@@ -29,6 +29,9 @@ export function SettingsClient({
   const toast = useToast();
   const [name, setName] = useState(householdName);
   const [url, setUrl] = useState(inviteUrl);
+  const [resetting, setResetting] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [busy, setBusy] = useState(false);
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pb-10 pt-5 md:px-6">
@@ -116,6 +119,55 @@ export function SettingsClient({
           Texto e foto: {ai ? <b className="text-in-ink">ativo</b> : "desativado (defina OPENAI_API_KEY — sem ela, o texto usa palavras-chave)"}
         </p>
         <p className="text-muted">Áudio: {audio ? <b className="text-in-ink">ativo</b> : "desativado (defina OPENAI_API_KEY)"}</p>
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-2xl border border-neg/40 bg-card p-4 text-sm">
+        <h2 className="text-[15px] font-semibold text-neg">Começar de novo</h2>
+        <p className="text-muted">
+          Apaga todas as tabelas, linhas, lançamentos e orçamentos da planilha e deixa só Entradas e Saídas vazias. Vale para todos
+          que participam dela e não dá para desfazer. Considere <b>Exportar tudo</b> antes.
+        </p>
+        {!resetting ? (
+          <button onClick={() => setResetting(true)} className="h-10 rounded-[10px] border border-neg/40 text-sm font-semibold text-neg">
+            Zerar todos os dados
+          </button>
+        ) : (
+          <div className="flex flex-col gap-2 rounded-xl bg-soft p-3">
+            <span className="text-[13px] font-medium">
+              Digite <b>ZERAR</b> para confirmar
+            </span>
+            <input className={inputCls} value={confirmText} onChange={(e) => setConfirmText(e.target.value)} autoComplete="off" />
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setResetting(false);
+                  setConfirmText("");
+                }}
+                className="h-10 flex-1 rounded-[10px] border border-line text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                disabled={busy || confirmText.trim().toUpperCase() !== "ZERAR"}
+                onClick={async () => {
+                  setBusy(true);
+                  const r = await resetHouseholdData(confirmText);
+                  setBusy(false);
+                  if (r.ok) {
+                    await limparCacheOffline();
+                    toast("Dados zerados");
+                    setResetting(false);
+                    setConfirmText("");
+                    router.refresh();
+                  } else toast(r.error);
+                }}
+                className="h-10 flex-1 rounded-[10px] bg-neg text-sm font-semibold text-white disabled:opacity-40"
+              >
+                {busy ? "Apagando…" : "Apagar tudo"}
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       <button

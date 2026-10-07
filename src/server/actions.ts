@@ -100,6 +100,24 @@ export async function renameHousehold(name: string): Promise<Result> {
   }
 }
 
+/** Apaga tabelas, linhas, lançamentos e orçamentos da planilha e volta ao começo (Entradas e Saídas vazias). */
+export async function resetHouseholdData(confirmation: string): Promise<Result> {
+  try {
+    const { householdId } = await requireHousehold();
+    if (confirmation.trim().toUpperCase() !== "ZERAR") return { ok: false, error: "Digite ZERAR para confirmar" };
+    await db.transaction(async (tx) => {
+      // o resto (linhas, lançamentos, séries, vínculos, limites) cai em cascata
+      await tx.delete(budgets).where(eq(budgets.householdId, householdId));
+      await tx.delete(finTables).where(eq(finTables.householdId, householdId));
+      await createDefaultTables(tx, householdId);
+    });
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 /* ================================================================== */
 /* Lançamentos                                                         */
 /* ================================================================== */
