@@ -356,7 +356,7 @@ export function QuickAdd({
               )}
             </div>
             <div className="flex flex-1 flex-col justify-center gap-2">
-              {!ai && <p className="text-xs text-warn-ink">Leitura de foto precisa da IA (ANTHROPIC_API_KEY).</p>}
+              {!ai && <p className="text-xs text-warn-ink">Leitura de foto precisa da IA (OPENAI_API_KEY).</p>}
               <button disabled={!ai || busy} onClick={() => camRef.current?.click()} className="h-11 rounded-xl bg-ink text-sm font-semibold text-on-ink disabled:opacity-50">
                 {busy ? "Lendo a nota…" : "Tirar foto"}
               </button>

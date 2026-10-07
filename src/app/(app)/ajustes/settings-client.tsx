@@ -113,7 +113,7 @@ export function SettingsClient({
       <section className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4 text-sm">
         <h2 className="text-[15px] font-semibold">IA</h2>
         <p className="text-muted">
-          Texto e foto: {ai ? <b className="text-in-ink">ativo</b> : "desativado (defina ANTHROPIC_API_KEY — sem ela, o texto usa palavras-chave)"}
+          Texto e foto: {ai ? <b className="text-in-ink">ativo</b> : "desativado (defina OPENAI_API_KEY — sem ela, o texto usa palavras-chave)"}
         </p>
         <p className="text-muted">Áudio: {audio ? <b className="text-in-ink">ativo</b> : "desativado (defina OPENAI_API_KEY)"}</p>
       </section>

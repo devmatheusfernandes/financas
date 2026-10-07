@@ -1,6 +1,5 @@
 import "server-only";
 import { generateText, Output, transcribe } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { parseCents, today } from "@/lib/format";
@@ -17,7 +16,7 @@ export type Suggestion = {
   engine: "ai" | "rules";
 };
 
-export const aiEnabled = () => !!process.env.ANTHROPIC_API_KEY;
+export const aiEnabled = () => !!process.env.OPENAI_API_KEY;
 export const audioEnabled = () => !!process.env.OPENAI_API_KEY;
 
 const KIND_PT = { in: "entradas", out: "saídas", sub: "auxiliar" } as const;
@@ -63,7 +62,7 @@ export async function suggestWithAI(opts: {
   if (opts.image) content.push({ type: "file", mediaType: opts.image.mediaType, data: opts.image.data });
 
   const { output } = await generateText({
-    model: anthropic(process.env.AI_MODEL || "claude-haiku-4-5"),
+    model: openai(process.env.AI_MODEL || "gpt-5-mini"),
     output: Output.object({ schema }),
     messages: [{ role: "user", content }],
   });

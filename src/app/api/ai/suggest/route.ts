@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       if (file.size > MAX_BYTES) return NextResponse.json({ error: "Foto muito grande (máx. 4 MB)" }, { status: 413 });
       if (!aiEnabled()) {
         return NextResponse.json(
-          { error: "Leitura de foto precisa da IA. Configure ANTHROPIC_API_KEY." },
+          { error: "Leitura de foto precisa da IA. Configure OPENAI_API_KEY." },
           { status: 501 },
         );
       }

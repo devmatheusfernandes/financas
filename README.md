@@ -39,12 +39,11 @@ Importa Entradas, Saídas, Cartão de crédito, Assinaturas e Manutenções de 2
    | `DATABASE_URL` | connection string pooled do Neon |
    | `BETTER_AUTH_SECRET` | `openssl rand -hex 32` |
    | `BETTER_AUTH_URL` | URL pública, ex. `https://financas.vercel.app` |
-   | `ANTHROPIC_API_KEY` | opcional — texto e foto com IA |
-   | `AI_MODEL` | opcional — padrão `claude-haiku-4-5` |
-   | `OPENAI_API_KEY` | opcional — transcrição de áudio |
+   | `OPENAI_API_KEY` | opcional — texto, foto e áudio com IA |
+   | `AI_MODEL` | opcional — padrão `gpt-5-mini` |
 4. Para importar seus dados em produção, rode o `seed:planilha` localmente com o `DATABASE_URL` do Neon.
 
-Sem `ANTHROPIC_API_KEY`, o "Adicionar rápido" por texto usa um interpretador por palavras-chave (mercado → Alimentação, posto → Gasolina…) e o modo Foto fica desativado. Sem `OPENAI_API_KEY`, o modo Áudio fica desativado.
+Sem `OPENAI_API_KEY`, o "Adicionar rápido" por texto usa um interpretador por palavras-chave (mercado → Alimentação, posto → Gasolina…) e os modos Foto e Áudio ficam desativados.
 
 ## Como os dados funcionam
 
